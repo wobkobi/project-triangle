@@ -21,6 +21,13 @@
       "@/*": ["./*"]
     }
   },
-  "include": [".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "components/MapComponent.tsx",
+    "components/AddressInput.js"
+  ],
   "exclude": ["node_modules"]
 }
