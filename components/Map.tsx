@@ -17,12 +17,48 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [map, setMap] = useState<google.maps.Map>();
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [centralMarker, setCentralMarker] = useState<google.maps.Marker | null>(
-    null
-  );
+  const [centralMarker, setCentralMarker] = useState<
+    google.maps.Marker | undefined
+  >(undefined);
   const [centralAddress, setCentralAddress] = useState<string>("");
+  const markers = useRef<google.maps.Marker[]>([]); // Store markers in a ref
+  const updateURL = (currentAddresses: Address[]) => {
+    const params = new URLSearchParams();
+    currentAddresses.forEach((address, index) => {
+      params.append(
+        `address${index}`,
+        JSON.stringify({
+          lat: address.lat,
+          lng: address.lng,
+          name: address.name,
+        })
+      );
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}?${params}`
+    );
+  };
+
+  const loadAddressesFromURL = () => {
+    const params = new URLSearchParams(window.location.search);
+    const loadedAddresses: Address[] = [];
+    params.forEach((value) => {
+      try {
+        const address = JSON.parse(value);
+        if (address && address.lat && address.lng && address.name) {
+          loadedAddresses.push(address);
+        }
+      } catch (error) {
+        console.error("Error parsing address from URL:", error);
+      }
+    });
+    setAddresses(loadedAddresses);
+  };
 
   useEffect(() => {
+    loadAddressesFromURL();
     const loader = new Loader({
       apiKey,
       version: "weekly",
@@ -66,68 +102,67 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
   };
 
   useEffect(() => {
-    if (!map) return;
-    const bounds = new window.google.maps.LatLngBounds();
-    addresses.forEach(({ lat, lng }) => {
-      const position = new window.google.maps.LatLng(lat, lng);
-      bounds.extend(position);
-      new window.google.maps.Marker({
-        position,
-        map,
-      });
-    });
+    markers.current.forEach((marker) => marker.setMap(null));
+    markers.current = [];
 
-    if (addresses.length >= 2) {
-      const centralLat =
-        addresses.reduce((acc, { lat }) => acc + lat, 0) / addresses.length;
-      const centralLng =
-        addresses.reduce((acc, { lng }) => acc + lng, 0) / addresses.length;
-      const centralPosition = new window.google.maps.LatLng(
-        centralLat,
-        centralLng
-      );
+    if (map) {
+      const bounds = new window.google.maps.LatLngBounds();
+      addresses.forEach((address) => {
+        const position = new window.google.maps.LatLng(
+          address.lat,
+          address.lng
+        );
+        bounds.extend(position);
 
-      if (centralMarker) {
-        centralMarker.setPosition(centralPosition);
-      } else {
-        const marker = new window.google.maps.Marker({
-          position: centralPosition,
-          map: map,
-          icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+        // Recreate markers for current addresses
+        const marker = new google.maps.Marker({
+          position,
+          map,
         });
-        setCentralMarker(marker);
-      }
-      setCentralAddress(
-        `Central Point: ${centralLat.toFixed(5)}, ${centralLng.toFixed(5)}`
-      );
-    } else {
-      if (centralMarker) centralMarker.setMap(null);
-      setCentralMarker(null);
-      setCentralAddress("");
-    }
+        markers.current.push(marker); // Store the marker
+      });
+      if (addresses.length >= 2) {
+        const centralLat =
+          addresses.reduce((acc, { lat }) => acc + lat, 0) / addresses.length;
+        const centralLng =
+          addresses.reduce((acc, { lng }) => acc + lng, 0) / addresses.length;
+        const centralPosition = new window.google.maps.LatLng(
+          centralLat,
+          centralLng
+        );
 
-    map.fitBounds(bounds);
+        if (centralMarker) {
+          centralMarker.setPosition(centralPosition);
+        } else {
+          const marker = new window.google.maps.Marker({
+            position: centralPosition,
+            map: map,
+            icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+          });
+          setCentralMarker(marker);
+        }
+        setCentralAddress(
+          `Central Point: ${centralLat.toFixed(5)}, ${centralLng.toFixed(5)}`
+        );
+      } else {
+        if (centralMarker) centralMarker.setMap(null);
+        setCentralMarker(undefined);
+        setCentralAddress("");
+      }
+
+      map.fitBounds(bounds);
+      updateURL(addresses); // Update URL as necessary
+    }
   }, [map, addresses]);
 
   const removeAddress = (indexToRemove: number) => {
-    console.log(`Removing address at index: ${indexToRemove}`); // Debugging log
+    markers.current[indexToRemove]?.setMap(null); // Safely attempt to remove the marker
+    markers.current.splice(indexToRemove, 1); // Remove the marker from the array
 
-    // Access the marker of the address to be removed
-    const markerToRemove = addresses[indexToRemove].marker;
-    console.log(`Marker to remove:`, markerToRemove); // Debugging log
-
-    // Remove the marker from the map
-    markerToRemove.setMap(null);
-
-    // Filter out the address and its marker
     const updatedAddresses = addresses.filter(
       (_, index) => index !== indexToRemove
     );
-
-    // Update the addresses state
     setAddresses(updatedAddresses);
-
-    console.log(`Updated addresses:`, updatedAddresses); // Debugging log
   };
 
   return (
@@ -157,6 +192,12 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
             </li>
           ))}
         </ul>
+        {centralAddress && (
+          <div className="mt-4">
+            <h2 className="mb-2 text-lg font-semibold">Central Location:</h2>
+            <p>{centralAddress}</p>
+          </div>
+        )}
       </div>
     </div>
   );
