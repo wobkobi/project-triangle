@@ -9,6 +9,7 @@ interface Address {
   lat: number;
   lng: number;
   name: string;
+  marker: google.maps.Marker;
 }
 
 const Map: React.FC<MapProps> = ({ apiKey }) => {
@@ -16,7 +17,6 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [map, setMap] = useState<google.maps.Map>();
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [centralMarker, setCentralMarker] = useState<google.maps.Marker | null>(
     null
   );
@@ -31,35 +31,42 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
 
     loader.load().then(() => {
       if (mapRef.current) {
+        const initialCenter = { lat: 0, lng: 0 };
         const newMap = new window.google.maps.Map(mapRef.current, {
-          center: { lat: 0, lng: 0 },
+          center: initialCenter,
           zoom: 8,
         });
         setMap(newMap);
 
-        const autocomplete = new window.google.maps.places.Autocomplete(
-          inputRef.current
-        );
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          if (!place.geometry || !place.geometry.location) return;
-
-          const { lat, lng } = place.geometry.location;
-          const name = place.formatted_address || "";
-          setAddresses((prev) => [...prev, { lat: lat(), lng: lng(), name }]);
-          inputRef.current.value = "";
-        });
+        setupAutocomplete(newMap);
       }
     });
   }, [apiKey]);
 
+  const setupAutocomplete = (map: google.maps.Map) => {
+    if (!inputRef.current) return;
+    const autocomplete = new window.google.maps.places.Autocomplete(
+      inputRef.current
+    );
+    autocomplete.bindTo("bounds", map);
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      if (!place.geometry || !place.geometry.location) return;
+
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      const name = place.formatted_address || "";
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map,
+      });
+      setAddresses((prev) => [...prev, { lat, lng, name, marker }]);
+      if (inputRef.current) inputRef.current.value = "";
+    });
+  };
+
   useEffect(() => {
-    updateMarkersAndCentralPoint();
-  }, [map, addresses]);
-
-  const updateMarkersAndCentralPoint = () => {
     if (!map) return;
-
     const bounds = new window.google.maps.LatLngBounds();
     addresses.forEach(({ lat, lng }) => {
       const position = new window.google.maps.LatLng(lat, lng);
@@ -100,49 +107,56 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
     }
 
     map.fitBounds(bounds);
-  };
+  }, [map, addresses]);
 
   const removeAddress = (indexToRemove: number) => {
-    // First, ensure the marker exists at the specified index
-    if (markers[indexToRemove]) {
-      // If the marker exists, remove it from the map
-      markers[indexToRemove].setMap(null);
-    }
+    console.log(`Removing address at index: ${indexToRemove}`); // Debugging log
 
-    // Create updated arrays for markers and addresses, excluding the one to remove
-    const updatedMarkers = markers.filter(
-      (_, index) => index !== indexToRemove
-    );
+    // Access the marker of the address to be removed
+    const markerToRemove = addresses[indexToRemove].marker;
+    console.log(`Marker to remove:`, markerToRemove); // Debugging log
+
+    // Remove the marker from the map
+    markerToRemove.setMap(null);
+
+    // Filter out the address and its marker
     const updatedAddresses = addresses.filter(
       (_, index) => index !== indexToRemove
     );
 
-    // Update state with the filtered arrays
-    setMarkers(updatedMarkers);
+    // Update the addresses state
     setAddresses(updatedAddresses);
+
+    console.log(`Updated addresses:`, updatedAddresses); // Debugging log
   };
 
   return (
     <div>
       <div>
-        <input ref={inputRef} type="text" placeholder="Enter an address" />
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder="Enter an address"
+          className="w-full rounded border border-gray-300 p-4 text-xl shadow focus:border-blue-500 focus:outline-none" // Tailwind classes for styling
+        />
       </div>
       <div ref={mapRef} style={{ height: "700px", width: "100%" }} />
       <div>
-        <h2>Address List:</h2>
-        <ul>
+        <h2 className="mb-2 text-lg font-semibold">Address List:</h2>
+        <ul className="list-disc space-y-2 pl-5">
           {addresses.map((address, index) => (
-            <li key={index}>
-              {address.name}
+            <li
+              key={index}
+              className="flex items-center justify-between rounded bg-gray-100 p-2">
+              <span>{address.name}</span>
               <button
                 onClick={() => removeAddress(index)}
-                style={{ marginLeft: "10px" }}>
+                className="focus:shadow-outline ml-4 rounded bg-red-500 px-2 py-1 font-bold text-white hover:bg-red-700 focus:outline-none">
                 Remove
               </button>
             </li>
           ))}
         </ul>
-        {centralAddress && <p>{centralAddress}</p>}
       </div>
     </div>
   );
