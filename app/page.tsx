@@ -6,7 +6,7 @@ import Head from "next/head";
 
 const HomePage = () => {
   // Accessing the Google Maps API key from environment variables
-  const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
   return (
     <>
       <Head>

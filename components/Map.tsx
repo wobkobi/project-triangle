@@ -159,7 +159,7 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
   const removeAddress = (indexToRemove: number) => {
     // Directly access and remove the marker associated with the address to be removed
     if (addresses[indexToRemove]?.marker) {
-      addresses[indexToRemove].marker === null;
+      addresses[indexToRemove].marker.setMap(null);
 
       // Filter out the address and its marker
       const updatedAddresses = addresses.filter(
