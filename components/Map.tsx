@@ -22,6 +22,7 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
   >(undefined);
   const [centralAddress, setCentralAddress] = useState<string>("");
   const markers = useRef<google.maps.Marker[]>([]); // Store markers in a ref
+
   const updateURL = (currentAddresses: Address[]) => {
     const params = new URLSearchParams();
     currentAddresses.forEach((address, index) => {
@@ -156,18 +157,25 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
   }, [map, addresses]);
 
   const removeAddress = (indexToRemove: number) => {
-    markers.current[indexToRemove]?.setMap(null); // Safely attempt to remove the marker
-    markers.current.splice(indexToRemove, 1); // Remove the marker from the array
+    // Directly access and remove the marker associated with the address to be removed
+    if (addresses[indexToRemove]?.marker) {
+      addresses[indexToRemove].marker === null;
 
-    const updatedAddresses = addresses.filter(
-      (_, index) => index !== indexToRemove
-    );
-    setAddresses(updatedAddresses);
+      // Filter out the address and its marker
+      const updatedAddresses = addresses.filter(
+        (_, index) => index !== indexToRemove
+      );
+
+      // Update the addresses state
+      setAddresses(updatedAddresses);
+    } else {
+      console.error("Attempted to remove an address without a marker.");
+    }
   };
 
   return (
-    <div>
-      <div>
+    <div className="flex h-screen flex-col">
+      <div className="p-4">
         <input
           ref={inputRef}
           type="text"
@@ -175,8 +183,8 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
           className="w-full rounded border border-gray-300 p-4 text-xl shadow focus:border-blue-500 focus:outline-none" // Tailwind classes for styling
         />
       </div>
-      <div ref={mapRef} style={{ height: "700px", width: "100%" }} />
-      <div>
+      <div ref={mapRef} className="flex-grow" style={{ width: "100%" }} />
+      <div className="overflow-auto" style={{ maxHeight: "300px" }}>
         <h2 className="mb-2 text-lg font-semibold">Address List:</h2>
         <ul className="list-disc space-y-2 pl-5">
           {addresses.map((address, index) => (
@@ -192,13 +200,13 @@ const Map: React.FC<MapProps> = ({ apiKey }) => {
             </li>
           ))}
         </ul>
-        {centralAddress && (
-          <div className="mt-4">
-            <h2 className="mb-2 text-lg font-semibold">Central Location:</h2>
-            <p>{centralAddress}</p>
-          </div>
-        )}
       </div>
+      {centralAddress && (
+        <div className="mt-4 p-4">
+          <h2 className="mb-2 text-lg font-semibold">Central Location:</h2>
+          <p>{centralAddress}</p>
+        </div>
+      )}
     </div>
   );
 };
