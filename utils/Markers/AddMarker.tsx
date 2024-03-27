@@ -1,6 +1,6 @@
 import { Address } from "@/types/Address";
-import { CalculateGeoCenter } from "../Math/CalculateGeoCenter";
-import { CalculateMostCentralLocation } from "../Math/CalulateMostCentralLocation";
+import { CalculateGeoCenter } from "@/utils/Math/CalculateGeoCenter";
+import { CalculateMostCentralLocation } from "@/utils/Math/CalulateMostCentralLocation";
 
 export function AddMarker(
   map: google.maps.Map,
