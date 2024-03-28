@@ -1,11 +1,5 @@
 import Address from "@/types/Address";
-import {
-  LatLng,
-  LatLngBounds,
-  Map,
-  Marker,
-  PinElement,
-} from "@/types/MapTypes";
+import { LatLng, LatLngBounds, Map, Marker, Pin } from "@/types/MapTypes";
 import CalculateGeoCenter from "@/utils/Math/CalculateGeoCenter";
 import CalculateMostCentralLocation from "@/utils/Math/CalulateMostCentralLocation";
 
@@ -31,7 +25,7 @@ export default function AddMarker(
   // Add markers for addresses
   addresses.forEach(({ lat, lng }) => {
     const position = LatLng(lat, lng);
-    const redPin = PinElement({
+    const redPin = Pin({
       background: "#ea4335",
       borderColor: "#c5221f",
       glyphColor: "#b31412",
@@ -58,7 +52,7 @@ export default function AddMarker(
       central.lng !== mostCentralAddress.lng
     ) {
       const position = LatLng(central.lat, central.lng);
-      const bluePin = PinElement({
+      const bluePin = Pin({
         background: "#4285f4",
         borderColor: "#357ae8",
         glyphColor: "#2a56c6",
@@ -76,7 +70,7 @@ export default function AddMarker(
   const geoCenter = CalculateGeoCenter(addresses);
   if (geoCenter) {
     const position = LatLng(geoCenter.lat, geoCenter.lng);
-    const yellowPin = PinElement({
+    const yellowPin = Pin({
       background: "#fbbc05",
       borderColor: "#e9ab04",
       glyphColor: "#c98f02",
@@ -92,7 +86,7 @@ export default function AddMarker(
   // Add a green marker for the most central location
   if (mostCentralAddress) {
     const position = LatLng(mostCentralAddress.lat, mostCentralAddress.lng);
-    const greenPin = PinElement({
+    const greenPin = Pin({
       background: "#34a853",
       borderColor: "#2c8f47",
       glyphColor: "#22733e",

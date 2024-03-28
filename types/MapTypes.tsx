@@ -1,6 +1,6 @@
 export type Marker = google.maps.marker.AdvancedMarkerElement;
 
-export type PinElement = google.maps.marker.PinElement;
+export type Pin = google.maps.marker.PinElement;
 
 export type Map = google.maps.Map;
 
@@ -12,9 +12,7 @@ export function Marker(
   return new google.maps.marker.AdvancedMarkerElement(options);
 }
 
-export function PinElement(
-  options: google.maps.marker.PinElementOptions
-): PinElement {
+export function Pin(options: google.maps.marker.PinElementOptions): Pin {
   return new google.maps.marker.PinElement(options);
 }
 

@@ -23,7 +23,6 @@ export default async function InitMap(
         center: { lat: 40.7128, lng: -74.006 },
         zoom: 2,
         mapId: "f1b7b3b3b7b3b1f7",
-        gestureHandling: "greedy",
       });
       setMap(map);
     }

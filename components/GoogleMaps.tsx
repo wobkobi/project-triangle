@@ -111,7 +111,7 @@ export function GoogleMaps() {
   return (
     <>
       {/* Header section with input and button */}
-      <div className={cn(" w-full max-w-7xl rounded-lg bg-gray-100 p-4")}>
+      <div className={cn(" w-full max-w-[70%] rounded-lg bg-gray-100 p-4")}>
         <div className={cn("flex items-center space-x-4")}>
           {/* Input */}
           <input
@@ -134,7 +134,7 @@ export function GoogleMaps() {
       <div
         ref={mapRef}
         className={cn(
-          "h-[50vh] min-h-[300px] w-full max-w-7xl bg-gray-100 sm:min-h-[400px] md:min-h-[500px] lg:min-h-[600px] xl:min-h-[700px]"
+          "h-[40vh] w-full max-w-[70%] bg-gray-100 sm:h-[50vh] sm:min-h-[300px] md:h-[60vh] md:min-h-[400px] lg:h-[70vh] lg:min-h-[500px] xl:h-[80vh] xl:min-h-[600px] 2xl:min-h-[700px]"
         )}
       />
 

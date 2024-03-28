@@ -18,26 +18,32 @@ export default function MoveMarkers(
   // Sort and reverse the indexes to handle splicing correctly
   const sortedIndexes = [...indexes].sort((a, b) => b - a);
 
-  const addressesToMove: Address[] = [];
+  // Create a function to check if the address already exists in the target list
+  const addressExists = (address: Address, list: Address[]) => {
+    return list.some(
+      (existingAddress) =>
+        existingAddress.lat === address.lat &&
+        existingAddress.lng === address.lng
+    );
+  };
 
-  // Use forEach to process each index
   sortedIndexes.forEach((index) => {
-    if (isFromCentral) {
-      const [address] = potentialCentrals.splice(index, 1);
-      if (address) addressesToMove.push(address);
+    const listToRemoveFrom = isFromCentral ? potentialCentrals : addresses;
+    const listToAddTo = isFromCentral ? addresses : potentialCentrals;
+    const [address] = listToRemoveFrom.splice(index, 1);
+
+    if (address && !addressExists(address, listToAddTo)) {
+      listToAddTo.push(address);
     } else {
-      const [address] = addresses.splice(index, 1);
-      if (address) addressesToMove.push(address);
+      // Add it back to its original list and show a popup
+      listToRemoveFrom.splice(index, 0, address);
+      window.alert("You can't have duplicates in the same list.");
     }
   });
 
-  if (isFromCentral) {
-    // Add moved addresses to the other list
-    setAddresses((prev) => [...prev, ...addressesToMove]);
-  } else {
-    // Add moved potential centrals to the other list
-    setPotentialCentrals((prev) => [...prev, ...addressesToMove]);
-  }
+  // Set the new state for both lists
+  setAddresses([...addresses]);
+  setPotentialCentrals([...potentialCentrals]);
 
   // After moving, re-add all markers to reflect the new state
   AddMarker(map, addresses, potentialCentrals, markersRef, geoCenterMarkerRef);
