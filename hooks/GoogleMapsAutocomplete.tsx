@@ -11,9 +11,7 @@ export default function GoogleMapsAutocomplete(
 ) {
   if (!map || !inputRef.current) return;
 
-  const autocomplete = new window.google.maps.places.Autocomplete(
-    inputRef.current
-  );
+  const autocomplete = new google.maps.places.Autocomplete(inputRef.current);
   autocomplete.bindTo("bounds", map);
   autocomplete.addListener("place_changed", () => {
     const place = autocomplete.getPlace();

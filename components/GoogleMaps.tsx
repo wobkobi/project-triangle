@@ -27,6 +27,9 @@ export function GoogleMaps() {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
   useMemo(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
     InitMap(apiKey, mapRef, setMap);
     return () => {};
   }, [apiKey]);
