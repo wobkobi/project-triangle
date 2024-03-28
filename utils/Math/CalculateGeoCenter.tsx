@@ -1,4 +1,4 @@
-import { Address } from "@/types/Address";
+import Address from "@/types/Address";
 
 export function CalculateGeoCenter(addresses: Address[]): Address | null {
   if (addresses.length < 2) {

@@ -1,7 +1,8 @@
-import { Address } from "@/types/Address";
+import Address from "@/types/Address";
 import { Map, Marker } from "@/types/MapTypes";
-import { AddMarker } from "@/utils/markers/AddMarker";
-export function MoveMarkers(
+import AddMarker from "@/utils/markers/AddMarker";
+
+export default function MoveMarkers(
   indexes: number[],
   isFromCentral: boolean,
   addresses: Address[],

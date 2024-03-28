@@ -1,4 +1,4 @@
-import { Address } from "@/types/Address";
+import Address from "@/types/Address";
 import {
   LatLng,
   LatLngBounds,
@@ -9,7 +9,7 @@ import {
 import { CalculateGeoCenter } from "@/utils/math/CalculateGeoCenter";
 import { CalculateMostCentralLocation } from "@/utils/math/CalulateMostCentralLocation";
 
-export function AddMarker(
+export default function AddMarker(
   map: Map,
   addresses: Address[],
   potentialCentrals: Address[],

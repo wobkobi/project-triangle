@@ -2,11 +2,11 @@ import { Map } from "@/types/MapTypes";
 import { Loader } from "@googlemaps/js-api-loader";
 import { Dispatch, RefObject, SetStateAction } from "react";
 
-export const InitMap = async (
+export default async function (
   apiKey: string,
   mapRef: RefObject<HTMLDivElement>,
   setMap: Dispatch<SetStateAction<Map | undefined>>
-) => {
+) {
   const loader = new Loader({
     apiKey: apiKey,
     version: "weekly",
@@ -30,4 +30,4 @@ export const InitMap = async (
   } catch (error) {
     console.error("Error loading the Google Maps script", error);
   }
-};
+}

@@ -1,6 +1,6 @@
-import { Address } from "@/types/Address";
+import Address from "@/types/Address";
 import cn from "@/utils/cn";
-import React, { useState } from "react";
+import { useState } from "react";
 
 interface AddressListsProps {
   addresses: Address[];
@@ -10,13 +10,13 @@ interface AddressListsProps {
   mostCentralAddress: Address | null;
 }
 
-export const AddressLists: React.FC<AddressListsProps> = ({
+export default function AddressLists({
   addresses,
   potentialCentrals,
   handleSwitch,
   handleRemove,
   mostCentralAddress,
-}) => {
+}: AddressListsProps) {
   const [selectedAddresses, setSelectedAddresses] = useState<number[]>([]);
   const [selectedCentrals, setSelectedCentrals] = useState<number[]>([]);
 
@@ -109,4 +109,4 @@ export const AddressLists: React.FC<AddressListsProps> = ({
       </div>
     </div>
   );
-};
+}

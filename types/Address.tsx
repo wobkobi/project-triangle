@@ -1,6 +1,6 @@
 import { Marker } from "@/types/MapTypes";
 
-export interface Address {
+export default interface Address {
   lat: number;
   lng: number;
   name: string;

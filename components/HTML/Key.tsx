@@ -5,7 +5,7 @@ interface KeyProps {
   geoCenterMarkerRef: React.MutableRefObject<Marker | null>;
 }
 
-export const Key: React.FC<KeyProps> = ({ geoCenterMarkerRef }) => {
+export default function Key({ geoCenterMarkerRef }: KeyProps) {
   const IMAGE_SIZE = 25;
 
   return (
@@ -58,4 +58,4 @@ export const Key: React.FC<KeyProps> = ({ geoCenterMarkerRef }) => {
       </div>
     </div>
   );
-};
+}

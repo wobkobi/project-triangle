@@ -1,4 +1,4 @@
-import { Address } from "@/types/Address";
+import Address from "@/types/Address";
 import { Map } from "@/types/MapTypes";
 export default function GoogleMapsAutocomplete(
   map: Map | undefined,

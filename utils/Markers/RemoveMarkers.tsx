@@ -1,8 +1,8 @@
-import { Address } from "@/types/Address";
+import Address from "@/types/Address";
 import { Map, Marker } from "@/types/MapTypes";
-import { AddMarker } from "@/utils/markers/AddMarker";
+import AddMarker from "@/utils/markers/AddMarker";
 
-export function RemoveMarkers(
+export default function RemoveMarkers(
   indexes: number[],
   isFromCentral: boolean,
   addresses: Address[],
