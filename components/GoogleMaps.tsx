@@ -5,11 +5,11 @@ import GoogleMapsAutocomplete from "@/hooks/GoogleMapsAutocomplete";
 import Address from "@/types/Address";
 import { Map, Marker } from "@/types/MapTypes";
 import InitMap from "@/utils/InitMap";
+import AddMarker from "@/utils/Markers/AddMarker";
+import MoveMarkers from "@/utils/Markers/MoveMarkers";
+import RemoveMarkers from "@/utils/Markers/RemoveMarkers";
+import CalculateMostCentralLocation from "@/utils/Math/CalulateMostCentralLocation";
 import cn from "@/utils/cn";
-import AddMarker from "@/utils/markers/AddMarker";
-import MoveMarkers from "@/utils/markers/MoveMarkers";
-import RemoveMarkers from "@/utils/markers/RemoveMarkers";
-import { CalculateMostCentralLocation } from "@/utils/math/CalulateMostCentralLocation";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 export function GoogleMaps() {

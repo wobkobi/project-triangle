@@ -1,6 +1,6 @@
 import Address from "@/types/Address";
 import { Map, Marker } from "@/types/MapTypes";
-import AddMarker from "@/utils/markers/AddMarker";
+import AddMarker from "@/utils/Markers/AddMarker";
 
 export default function MoveMarkers(
   indexes: number[],

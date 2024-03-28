@@ -2,7 +2,7 @@ import { Map } from "@/types/MapTypes";
 import { Loader } from "@googlemaps/js-api-loader";
 import { Dispatch, RefObject, SetStateAction } from "react";
 
-export default async function (
+export default async function InitMap(
   apiKey: string,
   mapRef: RefObject<HTMLDivElement>,
   setMap: Dispatch<SetStateAction<Map | undefined>>

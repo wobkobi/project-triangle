@@ -6,8 +6,8 @@ import {
   Marker,
   PinElement,
 } from "@/types/MapTypes";
-import { CalculateGeoCenter } from "@/utils/math/CalculateGeoCenter";
-import { CalculateMostCentralLocation } from "@/utils/math/CalulateMostCentralLocation";
+import CalculateGeoCenter from "@/utils/Math/CalculateGeoCenter";
+import CalculateMostCentralLocation from "@/utils/Math/CalulateMostCentralLocation";
 
 export default function AddMarker(
   map: Map,
