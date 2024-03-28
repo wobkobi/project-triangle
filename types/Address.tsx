@@ -1,6 +1,8 @@
-export interface Address {
+import { Marker } from "@/types/MapTypes";
+
+export default interface Address {
   lat: number;
   lng: number;
   name: string;
-  marker?: google.maps.Marker;
+  marker?: Marker;
 }

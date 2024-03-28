@@ -1,25 +1,29 @@
-import { Address } from "@/types/Address";
+import Address from "@/types/Address";
 
-export function CalculateGeoCenter(addresses: Address[]): Address | null {
+export default function CalculateGeoCenter(
+  addresses: Address[]
+): Address | null {
   if (addresses.length < 2) {
-    return null;
+    return null; // A geographical center requires at least two distinct points
   }
 
-  const sumCoordinates = addresses.reduce(
-    (acc, curr) => {
-      acc.lat += curr.lat;
-      acc.lng += curr.lng;
-      return acc;
+  // Calculate the total sum of latitude and longitude values
+  const totalCoordinates = addresses.reduce(
+    (accumulator, currentAddress) => {
+      accumulator.totalLat += currentAddress.lat;
+      accumulator.totalLng += currentAddress.lng;
+      return accumulator;
     },
-    { lat: 0, lng: 0 }
+    { totalLat: 0, totalLng: 0 }
   );
 
-  const centerLat = sumCoordinates.lat / addresses.length;
-  const centerLng = sumCoordinates.lng / addresses.length;
+  // Calculate the average latitude and longitude to find the geographical center
+  const averageLat = totalCoordinates.totalLat / addresses.length;
+  const averageLng = totalCoordinates.totalLng / addresses.length;
 
   return {
-    lat: centerLat,
-    lng: centerLng,
+    lat: averageLat,
+    lng: averageLng,
     name: "Geographical Center",
   };
 }

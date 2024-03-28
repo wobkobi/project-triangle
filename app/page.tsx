@@ -1,12 +1,14 @@
 "use client";
-import Map from "@/components/GoogleMaps";
+import { GoogleMaps } from "@/components/GoogleMaps";
+import cn from "@/utils/cn";
 
 const HomePage = () => {
   // Accessing the Google Maps API key from environment variables
   return (
-    <>
-      <Map />
-    </>
+    <div
+      className={cn("flex min-h-screen flex-col items-center justify-center")}>
+      <GoogleMaps />
+    </div>
   );
 };
 
