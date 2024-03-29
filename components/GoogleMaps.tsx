@@ -131,10 +131,11 @@ export function GoogleMaps() {
         </div>
         <Key geoCenterMarkerRef={geoCenterMarkerRef} />
       </div>
+
       <div
         ref={mapRef}
         className={cn(
-          "h-[40vh] w-full max-w-[70%] bg-gray-100 sm:h-[50vh] sm:min-h-[300px] md:h-[60vh] md:min-h-[400px] lg:h-[70vh] lg:min-h-[500px] xl:h-[80vh] xl:min-h-[600px] 2xl:min-h-[700px]"
+          "h-[50vh] min-h-[300px] w-full max-w-[70%] bg-gray-100 sm:h-[55vh] sm:min-h-[350px] md:h-[60vh] md:min-h-[400px] lg:h-[65vh] lg:min-h-[450px] xl:h-[70vh] xl:min-h-[500px]"
         )}
       />
 
