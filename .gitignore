@@ -65,6 +65,9 @@ Thumbs.db
 # Logs
 *.log
 
+# ESLint cache
+.eslintcache
+
 # npm / pnpm lockfiles (if you want to ignore them; otherwise remove)
 /package-lock.json
 /pnpm-lock.yaml
