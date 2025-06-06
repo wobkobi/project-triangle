@@ -16,9 +16,16 @@ const nextConfig = {
   // — Fail build on TS errors
   typescript: { ignoreBuildErrors: false },
 
-  // — Allow Next.js Image to load external icons from maps.google.com
+  // — Allow external images from maps.google.com via remotePatterns
   images: {
-    domains: ["maps.google.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "maps.google.com",
+        port: "",
+        pathname: "/mapfiles/ms/icons/**",
+      },
+    ],
   },
 
   // — Global security headers

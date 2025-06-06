@@ -1,139 +1,214 @@
-import Address from "@/types/address";
-import { Map, Marker, createMarker, createPin } from "@/types/map";
-import calculateGeoCenter from "@/utils/googleMaps/calculations/calculateGeoCenter";
-import calculateMostCentral from "@/utils/googleMaps/calculations/calculateMostCentral";
-import calculateMostCentralWithRoads from "@/utils/googleMaps/calculations/calculateMostCentralWithRoads";
+// File: src/utils/googleMaps/markers/addMarker.ts
+
+import type Address from "@/types/address";
+import type { Map as GoogleMapType } from "@/types/map";
+import type { MutableRefObject } from "react";
 
 /**
- * Adds markers for all addresses, potential centrals, the geographical center, and the most central address.
- * Clears existing markers first, then re-adds them all.
- * @param map - The Google Map instance
- * @param addresses - Array of Address objects representing all addresses
- * @param potentialCentrals - Array of Address objects representing potential central locations
- * @param markersRef - Ref object holding an array of existing Marker instances
- * @param geoCenterMarkerRef - Ref to store the “geographical center” marker instance
- * @param useRoads - If true, compute “most central” based on driving distance; otherwise use straight-line
- * @returns The Address object determined to be most central
+ * addMarker:
+ * - Places AdvancedMarkerElement pins for `addresses` (red) and `potentialCentrals` (blue).
+ * - Chooses the “most central” candidate from potentialCentrals (straight-line or driving time).
+ * - Places a green pin on that “most central” and a yellow pin at the geographic center.
+ * @param map - Google Map instance
+ * @param addresses - Array of Address ({ lat, lng, name })
+ * @param potentialCentrals - Array of Address to consider
+ * @param markersRef - Ref to collect all created AdvancedMarkerElement instances
+ * @param geoCenterMarkerRef - Ref for the geographic-center marker (yellow)
+ * @param useRoads - If true, sum driving durations via DirectionsService; otherwise use Haversine
+ * @returns Promise<Address | null> chosen “most central” Address from potentialCentrals
  */
 export default async function addMarker(
-  map: Map,
+  map: GoogleMapType,
   addresses: Address[],
   potentialCentrals: Address[],
-  markersRef: React.MutableRefObject<Marker[]>,
-  geoCenterMarkerRef: React.MutableRefObject<Marker | null>,
+  markersRef: MutableRefObject<google.maps.marker.AdvancedMarkerElement[]>,
+  geoCenterMarkerRef: MutableRefObject<google.maps.marker.AdvancedMarkerElement | null>,
   useRoads: boolean
-): Promise<Address> {
-  // 1) Remove previous geo-center marker if it exists
-  if (geoCenterMarkerRef.current) {
-    geoCenterMarkerRef.current.map = null;
-    geoCenterMarkerRef.current = null;
+): Promise<Address | null> {
+  if (potentialCentrals.length === 0) {
+    throw new Error("No potential centrals available");
   }
 
-  // 2) Remove existing markers
-  markersRef.current.forEach((m) => {
-    m.map = null;
-  });
-  markersRef.current = [];
+  // Dynamically load the “marker” library to get PinElement & AdvancedMarkerElement
+  const markerLib = (await (
+    google.maps as unknown as {
+      importLibrary: (lib: "marker") => Promise<{
+        PinElement: typeof google.maps.marker.PinElement;
+        AdvancedMarkerElement: typeof google.maps.marker.AdvancedMarkerElement;
+      }>;
+    }
+  ).importLibrary("marker")) as {
+    PinElement: typeof google.maps.marker.PinElement;
+    AdvancedMarkerElement: typeof google.maps.marker.AdvancedMarkerElement;
+  };
+  const { PinElement, AdvancedMarkerElement } = markerLib;
 
-  // 3) Add red markers for each “address”
-  addresses.forEach(({ lat, lng }) => {
-    const position = new google.maps.LatLng(lat, lng);
-    const redPin = createPin({
-      background: "#ea4335",
-      borderColor: "#c5221f",
-      glyphColor: "#b31412",
+  // Build LatLngBounds to fit all markers
+  const bounds = new google.maps.LatLngBounds();
+
+  // 1) Place red pins (addresses)
+  addresses.forEach((addr) => {
+    const redPin = new PinElement({
+      background: "#ff0000", // red
+      scale: 1,
     });
-    const marker = createMarker({
-      position,
+    const marker = new AdvancedMarkerElement({
       map,
+      position: { lat: addr.lat, lng: addr.lng },
       content: redPin.element,
+      title: addr.name,
     });
     markersRef.current.push(marker);
+    if (marker.position) {
+      bounds.extend(marker.position);
+    }
   });
 
-  // 4) Determine the most central address (using roads or straight-line)
-  let mostCentralAddress: Address | null = null;
-  if (useRoads) {
-    mostCentralAddress = await calculateMostCentralWithRoads(addresses);
+  // 2) Place blue pins (potentialCentrals)
+  potentialCentrals.forEach((pot) => {
+    const bluePin = new PinElement({
+      background: "#0000ff", // blue
+      scale: 1,
+    });
+    const marker = new AdvancedMarkerElement({
+      map,
+      position: { lat: pot.lat, lng: pot.lng },
+      content: bluePin.element,
+      title: pot.name,
+    });
+    markersRef.current.push(marker);
+    if (marker.position) {
+      bounds.extend(marker.position);
+    }
+  });
+
+  // Auto‐fit map to show all red + blue markers
+  map.fitBounds(bounds);
+
+  // 3) Determine “most central” from potentialCentrals
+  let mostCentral: Address | null = null;
+
+  if (!useRoads) {
+    // Straight-line: sum Haversine distance from each potential → all addresses
+    const totalDist = (center: Address): number =>
+      addresses.reduce((sum, a) => sum + haversine(a, center), 0);
+
+    let minDist = Infinity;
+    potentialCentrals.forEach((center) => {
+      const d = totalDist(center);
+      if (d < minDist) {
+        minDist = d;
+        mostCentral = center;
+      }
+    });
   } else {
-    mostCentralAddress = calculateMostCentral(addresses, potentialCentrals);
-  }
+    // Road travel-time: sum DirectionsService durations from each address → each potential
+    const service = new google.maps.DirectionsService();
 
-  if (!mostCentralAddress) {
-    // Fallback: pick first available
-    if (addresses.length > 0) {
-      mostCentralAddress = addresses[0];
-    } else if (potentialCentrals.length > 0) {
-      mostCentralAddress = potentialCentrals[0];
-    } else {
-      throw new Error("No valid addresses or potential centrals available");
+    /**
+     * getDuration:
+     * @param origin - Address origin
+     * @param destination - Address destination
+     * @returns Promise<number> resolving to travel duration in seconds (or Infinity on failure)
+     */
+    async function getDuration(
+      origin: Address,
+      destination: Address
+    ): Promise<number> {
+      return new Promise((resolve) => {
+        service.route(
+          {
+            origin: { lat: origin.lat, lng: origin.lng },
+            destination: { lat: destination.lat, lng: destination.lng },
+            travelMode: google.maps.TravelMode.DRIVING,
+          },
+          (result, status) => {
+            if (
+              status === "OK" &&
+              result?.routes?.[0]?.legs?.[0]?.duration?.value != null
+            ) {
+              resolve(result.routes[0].legs[0].duration.value);
+            } else {
+              resolve(Infinity);
+            }
+          }
+        );
+      });
+    }
+
+    let minTime = Infinity;
+    // For each candidate, sum durations from all addresses
+    for (const center of potentialCentrals) {
+      let sumTime = 0;
+      for (const addr of addresses) {
+        sumTime += await getDuration(addr, center);
+      }
+      if (sumTime < minTime) {
+        minTime = sumTime;
+        mostCentral = center;
+      }
     }
   }
 
-  // 5) Add blue markers for each “potential central” except the one flagged as most central
-  potentialCentrals.forEach((central) => {
-    if (
-      !mostCentralAddress ||
-      central.lat !== mostCentralAddress.lat ||
-      central.lng !== mostCentralAddress.lng
-    ) {
-      const position = new google.maps.LatLng(central.lat, central.lng);
-      const bluePin = createPin({
-        background: "#4285f4",
-        borderColor: "#357ae8",
-        glyphColor: "#2a56c6",
-      });
-      const marker = createMarker({
-        position,
-        map,
-        content: bluePin.element,
-      });
-      markersRef.current.push(marker);
-    }
-  });
-
-  // 6) Add yellow marker for the “geographical center” of all addresses
-  const geoCenter = calculateGeoCenter(addresses);
-  if (geoCenter) {
-    const position = new google.maps.LatLng(geoCenter.lat, geoCenter.lng);
-    const yellowPin = createPin({
-      background: "#fbbc05",
-      borderColor: "#e9ab04",
-      glyphColor: "#c98f02",
+  // 4) Place a green pin on the chosen “most central” potential
+  if (mostCentral) {
+    const greenPin = new PinElement({
+      background: "#00ff00", // green
+      scale: 1,
     });
-    const marker = createMarker({
-      position,
+    const greenMarker = new AdvancedMarkerElement({
       map,
-      content: yellowPin.element,
-    });
-    geoCenterMarkerRef.current = marker;
-  }
-
-  // 7) Add a green marker for the “most central” address
-  if (mostCentralAddress) {
-    const position = new google.maps.LatLng(
-      mostCentralAddress.lat,
-      mostCentralAddress.lng
-    );
-    const greenPin = createPin({
-      background: "#34a853",
-      borderColor: "#2c8f47",
-      glyphColor: "#22733e",
-    });
-    const greenMarker = createMarker({
-      position,
-      map,
+      position: { lat: mostCentral.lat, lng: mostCentral.lng },
       content: greenPin.element,
+      title: `Most Central: ${mostCentral.name}`,
     });
     markersRef.current.push(greenMarker);
   }
 
-  // 8) Fit map bounds to include every marker (addresses + potentials)
-  const bounds = new google.maps.LatLngBounds();
-  addresses.concat(potentialCentrals).forEach(({ lat, lng }) => {
-    bounds.extend(new google.maps.LatLng(lat, lng));
-  });
-  map.fitBounds(bounds, { top: 25, right: 25, bottom: 25, left: 25 });
+  // 5) Compute geographic center of all points
+  const allPoints = [...addresses, ...potentialCentrals];
+  const avgLat =
+    allPoints.reduce((sum, p) => sum + p.lat, 0) / allPoints.length;
+  const avgLng =
+    allPoints.reduce((sum, p) => sum + p.lng, 0) / allPoints.length;
 
-  return mostCentralAddress;
+  // Place or update a yellow pin at that geographic center
+  const yellowPin = new PinElement({
+    background: "#ffff00", // yellow
+    scale: 1,
+  });
+  if (geoCenterMarkerRef.current) {
+    geoCenterMarkerRef.current.position = { lat: avgLat, lng: avgLng };
+  } else {
+    const yellowMarker = new AdvancedMarkerElement({
+      map,
+      position: { lat: avgLat, lng: avgLng },
+      content: yellowPin.element,
+      title: "Geographic Center",
+    });
+    geoCenterMarkerRef.current = yellowMarker;
+  }
+
+  return mostCentral;
+}
+
+/**
+ * Computes straight-line distance (in kilometers) between two lat/lng points using the Haversine formula.
+ * @param p1 - First Address
+ * @param p2 - Second Address
+ * @returns Distance in kilometers
+ */
+function haversine(p1: Address, p2: Address): number {
+  const toRad = (deg: number): number => (deg * Math.PI) / 180;
+  const R = 6371; // Earth radius in kilometers
+  const dLat = toRad(p2.lat - p1.lat);
+  const dLng = toRad(p2.lng - p1.lng);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(p1.lat)) *
+      Math.cos(toRad(p2.lat)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
