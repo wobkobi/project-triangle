@@ -60,6 +60,9 @@
       "@types/react-dom"
     ]
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint --cache --fix",
     "*.{js,jsx,ts,tsx,css,html,json,md}": "prettier --write"
