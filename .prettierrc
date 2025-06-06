@@ -6,5 +6,8 @@
   ],
   "tailwindFunctions": ["clsx"],
   "bracketSameLine": true,
-  "trailingComma": "es5"
+  "trailingComma": "es5",
+  "semi": true,
+  "singleQuote": false,
+  "endOfLine": "crlf"
 }
