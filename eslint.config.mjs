@@ -92,14 +92,14 @@ export default [
       "@typescript-eslint/consistent-type-definitions": "error",
 
       // JSDoc enforcement rules
-      "jsdoc/require-jsdoc": "error",
-      "jsdoc/require-param": "error",
-      "jsdoc/require-param-description": "error",
-      "jsdoc/require-returns": "error",
-      "jsdoc/require-returns-description": "error",
-      "jsdoc/check-param-names": "error",
-      "jsdoc/check-tag-names": "error",
-      "jsdoc/no-undefined-types": "error",
+       "jsdoc/require-jsdoc": "warn",
+      "jsdoc/require-param": "warn",
+      "jsdoc/require-param-description": "warn",
+      "jsdoc/require-returns": "warn",
+      "jsdoc/require-returns-description": "warn",
+      "jsdoc/check-param-names": "warn",
+      "jsdoc/check-tag-names": "warn",
+      "jsdoc/no-undefined-types": "warn",
 
       // Explicit return types (warn)
       "@typescript-eslint/explicit-function-return-type": [

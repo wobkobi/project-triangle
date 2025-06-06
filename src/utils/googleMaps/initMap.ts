@@ -1,30 +1,27 @@
-// File: src/utils/googleMaps/initMap.ts
-
-import type { Map as GoogleMapType } from "@/types/map";
+import type { GoogleMapType } from "@/types/map";
 import type { Dispatch, RefObject } from "react";
 
 /**
- * initMap: dynamically loads the Maps JS API (with “places” + “marker” libraries),
- * then creates a Google Map with a required mapId (for advanced markers).
- * @param apiKey - Your Google Maps JavaScript API key.
- * @param mapRef - Ref to the DIV where the map will render.
- * @param setMap - React state setter to store the Google Map instance.
+ * initMap: loads the Maps JS API (with “places” and “marker” libraries),
+ * then creates a Google Map centered on New Zealand (using your styled Map ID).
+ * @param apiKey – your Google Maps API key
+ * @param mapRef – ref to the <div> where the map will render (may be null initially)
+ * @param setMap – React state setter to store the Google Map instance
  */
 export default function initMap(
   apiKey: string,
-  mapRef: RefObject<HTMLDivElement>,
+  mapRef: RefObject<HTMLDivElement | null>,
   setMap: Dispatch<GoogleMapType>
 ): void {
-  // If the script is already present, just initialize
   if (!document.getElementById("google-maps-script")) {
     const script = document.createElement("script");
     script.id = "google-maps-script";
-    // Load both "places" (for Autocomplete) and "marker" (for AdvancedMarkerElement)
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker`;
+    script.src =
+      `https://maps.googleapis.com/maps/api/js?key=${apiKey}` +
+      `&libraries=places,marker`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
-
     script.onload = () => initializeMap();
   } else {
     initializeMap();
@@ -37,11 +34,10 @@ export default function initMap(
     if (!mapRef.current) return;
 
     const map = new google.maps.Map(mapRef.current, {
-      center: { lat: 39.8283, lng: -98.5795 }, // center of USA
-      zoom: 4, // reasonable default zoom
+      center: { lat: -40.9006, lng: 174.886 },
+      zoom: 5,
       mapTypeId: "roadmap",
-      // You MUST supply a mapId for AdvancedMarkerElement to work:
-      mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID",
+      mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "",
     });
 
     setMap(map);

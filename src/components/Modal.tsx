@@ -1,5 +1,7 @@
+"use client";
+
 import cn from "@/utils/cn";
-import React, { useEffect } from "react";
+import React, { JSX, useEffect } from "react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,10 +12,10 @@ interface ModalProps {
 /**
  * Modal component: renders a full-screen overlay with centered content.
  * Closes on click outside or pressing the Escape key.
- * @param root0 - Props object
- * @param root0.isOpen - Whether the modal is currently open
- * @param root0.onClose - Callback to close the modal
- * @param root0.children - The content to display inside the modal
+ * @param params - Props object
+ * @param params.isOpen - Whether the modal is currently open
+ * @param params.onClose - Callback to close the modal
+ * @param params.children - The content to display inside the modal
  * @returns The modal JSX element (or null if not open)
  */
 export default function Modal({
@@ -44,7 +46,7 @@ export default function Modal({
     <div
       // Overlay
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+        "bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
       )}
       onClick={onClose}
       role="presentation">

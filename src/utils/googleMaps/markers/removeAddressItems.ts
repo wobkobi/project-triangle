@@ -1,5 +1,5 @@
 import Address from "@/types/address";
-import { Map, Marker } from "@/types/map";
+import { GoogleMapType, Marker } from "@/types/map";
 import addMarker from "@/utils/googleMaps/markers/addMarker";
 
 /**
@@ -15,7 +15,6 @@ import addMarker from "@/utils/googleMaps/markers/addMarker";
  * @param map - Google Map instance (never undefined here)
  * @param markersRef - Ref containing array of existing Marker instances
  * @param geoCenterMarkerRef - Ref containing the geo-center Marker
- * @param useRoads - Whether to use driving‐distance central calculation
  * @returns Promise<void>
  */
 export default async function removeAddressItems(
@@ -25,10 +24,9 @@ export default async function removeAddressItems(
   potentialCentrals: Address[],
   setAddresses: React.Dispatch<React.SetStateAction<Address[]>>,
   setPotentialCentrals: React.Dispatch<React.SetStateAction<Address[]>>,
-  map: Map,
-  markersRef: React.MutableRefObject<Marker[]>,
-  geoCenterMarkerRef: React.MutableRefObject<Marker | null>,
-  useRoads: boolean
+  map: GoogleMapType,
+  markersRef: React.RefObject<Marker[]>,
+  geoCenterMarkerRef: React.RefObject<Marker | null>
 ): Promise<void> {
   // 1) Remove items from the chosen list, working backwards so indexes stay valid
   const sortedIndexes = [...indexes].sort((a, b) => b - a);
@@ -72,7 +70,6 @@ export default async function removeAddressItems(
     addresses,
     potentialCentrals,
     markersRef,
-    geoCenterMarkerRef,
-    useRoads
+    geoCenterMarkerRef
   );
 }

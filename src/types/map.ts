@@ -11,7 +11,7 @@ export type Pin = google.maps.marker.PinElement;
 /**
  * Map type alias: google.maps.Map instance.
  */
-export type Map = google.maps.Map;
+export type GoogleMapType = google.maps.Map;
 
 /**
  * LatLng type alias: google.maps.LatLng object.
@@ -47,7 +47,7 @@ export function createPin(options: google.maps.marker.PinElementOptions): Pin {
 export function createMap(
   html: HTMLElement,
   options: google.maps.MapOptions
-): Map {
+): GoogleMapType {
   return new google.maps.Map(html, options);
 }
 

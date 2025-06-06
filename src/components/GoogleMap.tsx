@@ -1,24 +1,30 @@
+// File: src/components/GoogleMap.tsx
 "use client";
 
 import AddressList from "@/components/Map/AddressList";
 import KeyLegend from "@/components/Map/KeyLegend";
 import useGoogleMapsAutocomplete from "@/hooks/useGoogleMapsAutocomplete";
 import Address from "@/types/address";
-import { Map as GoogleMapType, Marker as GoogleMarkerType } from "@/types/map";
+import type { GoogleMapType } from "@/types/map";
 import cn from "@/utils/cn";
+import CalculateMostCentralLocation from "@/utils/googleMaps/calculations/calculateMostCentral";
 import initMap from "@/utils/googleMaps/initMap";
 import addMarker from "@/utils/googleMaps/markers/addMarker";
 import clearAllMarkers from "@/utils/googleMaps/markers/clearAllMarkers";
+import moveMarkers from "@/utils/googleMaps/markers/moveMarkers";
 import removeAddressItems from "@/utils/googleMaps/markers/removeAddressItems";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * GoogleMap component: renders the Google Maps canvas, input controls, and address lists.
- * @returns The complete map‐and‐controls JSX element
+ * GoogleMap component:
+ * - Initializes a Google Map centered on New Zealand (with a valid mapId).
+ * - Attaches an Autocomplete input that adds places into either `addresses` or `potentialCentrals`.
+ * - Renders AdvancedMarkerElements (red/blue/green/yellow) based on those lists.
+ * @returns A JSX element containing the input, the map, legend, and address list.
  */
-export function GoogleMap(): JSX.Element {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+export function GoogleMap(): React.JSX.Element {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [map, setMap] = useState<GoogleMapType>();
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -30,13 +36,12 @@ export function GoogleMap(): JSX.Element {
   const [isCentral, setIsCentral] = useState<boolean>(false);
   const [useRoads, setUseRoads] = useState<boolean>(false);
 
-  // Keep track of all markers and the “geographical center” marker
-  const markersRef = useRef<GoogleMarkerType[]>([]);
-  const geoCenterMarkerRef = useRef<GoogleMarkerType | null>(null);
+  // Refs for AdvancedMarkerElement instances
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const geoCenterMarkerRef =
+    useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
-  /**
-   * Initialize the Google Map once after component mounts.
-   */
+  // 1) Initialize the map once
   useEffect(() => {
     if (!map && mapRef.current) {
       initMap(
@@ -47,222 +52,164 @@ export function GoogleMap(): JSX.Element {
     }
   }, [map]);
 
-  /**
-   * Set up Places Autocomplete whenever the map is ready or “isCentral” toggles.
-   */
-  useEffect(() => {
-    if (!map || !inputRef.current) return;
+  // 2) Call the Autocomplete hook at the top level
+  useGoogleMapsAutocomplete({
+    map: map!,
+    inputRef,
+    isCentral,
+    addresses,
+    potentialCentrals,
+    setAddresses,
+    setPotentialCentrals,
+  });
 
-    useGoogleMapsAutocomplete(
-      map,
-      inputRef,
-      isCentral,
-      addresses,
-      potentialCentrals,
-      setAddresses,
-      setPotentialCentrals
-    );
-  }, [map, isCentral, addresses, potentialCentrals]);
-
-  /**
-   * Whenever addresses, potentialCentrals, or useRoads change, clear existing markers,
-   * re‐add them (if any), and compute the “most central” location. If no potentials, skip.
-   */
+  // 3) Whenever addresses or potentialCentrals change, remove old geo‐center, clear & re-add markers,
+  //    then compute and set mostCentralAddress using CalculateMostCentralLocation.
   useEffect(() => {
     if (!map) return;
 
-    // If no potential centrals, clear markers and reset
-    if (potentialCentrals.length === 0) {
-      clearAllMarkers(markersRef.current);
-      markersRef.current = [];
-      setMostCentralAddress(null);
-      return;
+    // 3a) Remove any existing geo‐center marker from the map
+    if (geoCenterMarkerRef.current) {
+      geoCenterMarkerRef.current.map = null;
+      geoCenterMarkerRef.current = null;
     }
 
-    /**
-     *
-     */
-    async function updateMarkers(): Promise<void> {
-      clearAllMarkers(markersRef.current);
-      markersRef.current = [];
+    // 3b) Remove all other AdvancedMarkerElements
+    clearAllMarkers(markersRef.current);
+    markersRef.current = [];
 
-      const central = await addMarker(
-        map!,
+    (async () => {
+      await addMarker(
+        map,
         addresses,
         potentialCentrals,
         markersRef,
-        geoCenterMarkerRef,
-        useRoads
+        geoCenterMarkerRef
       );
-      setMostCentralAddress(central);
-    }
 
-    updateMarkers();
+      const newMostCentral = CalculateMostCentralLocation(
+        addresses,
+        potentialCentrals
+      );
+      setMostCentralAddress(newMostCentral);
+    })();
   }, [map, addresses, potentialCentrals, useRoads]);
 
   /**
-   * Move selected addresses between “addresses” and “potentialCentrals”.
+   * Moves selected items from one list to the other.
+   * @param selected - Array of selected item indexes.
+   * @param fromCentral - If true, move from `potentialCentrals` → `addresses`; otherwise, vice versa.
    */
   const handleSwitch = useCallback(
-    (selectedIndexes: number[], isFromCentral: boolean): void => {
+    (selected: number[], fromCentral: boolean) => {
       if (!map) return;
-
-      if (isFromCentral) {
-        const toMove = selectedIndexes.map((i) => potentialCentrals[i]);
-        setPotentialCentrals((prev) =>
-          prev.filter((_, idx) => !selectedIndexes.includes(idx))
-        );
-        setAddresses((prev) => [...prev, ...toMove]);
-      } else {
-        const toMove = selectedIndexes.map((i) => addresses[i]);
-        setAddresses((prev) =>
-          prev.filter((_, idx) => !selectedIndexes.includes(idx))
-        );
-        setPotentialCentrals((prev) => [...prev, ...toMove]);
-      }
+      moveMarkers(
+        selected,
+        fromCentral,
+        addresses,
+        potentialCentrals,
+        setAddresses,
+        setPotentialCentrals,
+        map,
+        markersRef,
+        geoCenterMarkerRef
+      );
     },
     [map, addresses, potentialCentrals]
   );
 
   /**
-   * Remove selected addresses from either the “addresses” or the “potentialCentrals” list.
+   * Removes the selected items from either `addresses` or `potentialCentrals`,
+   * then updates markers accordingly.
+   * @param selected - Array of selected item indexes.
+   * @param fromCentral - If true, remove from `potentialCentrals`; otherwise, from `addresses`.
    */
   const handleRemove = useCallback(
-    async (
-      selectedIndexes: number[],
-      isFromCentral: boolean
-    ): Promise<void> => {
+    (selected: number[], fromCentral: boolean) => {
       if (!map) return;
-
-      await removeAddressItems(
-        selectedIndexes,
-        isFromCentral,
+      removeAddressItems(
+        selected,
+        fromCentral,
         addresses,
         potentialCentrals,
         setAddresses,
         setPotentialCentrals,
-        map!,
+        map,
         markersRef,
-        geoCenterMarkerRef,
-        useRoads
+        geoCenterMarkerRef
       );
     },
-    [map, addresses, potentialCentrals, useRoads]
+    [map, addresses, potentialCentrals]
   );
 
   return (
-    <>
-      {/* Input + Mode Toggle + “Use Roads” Checkbox */}
-      <div className="mx-auto my-6 max-w-2xl">
-        <div className="flex flex-col rounded-lg bg-white p-4 shadow-md sm:flex-row sm:items-center sm:space-x-4">
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder={isCentral ? "Add Potential Central…" : "Add Address…"}
-            className="flex-1 rounded-md border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <div className="mt-3 flex space-x-3 sm:mt-0">
-            <button
-              onClick={() => setIsCentral((prev) => !prev)}
-              className="rounded-md bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600">
-              {isCentral ? "Switch to Address" : "Switch to Potential"}
-            </button>
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={useRoads}
-                onChange={() => setUseRoads((prev) => !prev)}
-                className="h-5 w-5"
-              />
-              <span className="select-none">Use Roads</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* The map container */}
-      <div className="flex justify-center">
-        <div
-          ref={mapRef}
-          id="map"
-          className={cn(
-            "h-[50vh] min-h-[300px] w-full max-w-2xl",
-            "lg:h-[65vh] lg:min-h-[450px]",
-            "xl:h-[70vh] xl:min-h-[500px]",
-            "overflow-hidden rounded-lg shadow-md"
-          )}
-        />
-      </div>
-
-      {/* Legend showing pins + geographical center coordinates */}
-      <KeyLegend geoCenterMarkerRef={geoCenterMarkerRef} />
-
-      {/* Two‐column card layout: “Addresses” and “Potential Centrals” */}
-      <div className="mx-auto my-6 grid max-w-4xl gap-6 sm:grid-cols-2">
-        {/* Addresses Card */}
-        <div className="rounded-lg bg-white p-6 shadow-md">
-          <h2 className="mb-4 text-lg font-semibold">Addresses</h2>
-          <div className="max-h-56 space-y-2 overflow-y-auto">
-            {addresses.map((address) => (
-              <label
-                key={`${address.lat}-${address.lng}`}
-                className="flex cursor-pointer select-none items-center space-x-2">
+    <div className={cn("flex h-full flex-col lg:flex-row")}>
+      {/* Left column: map + input + legend */}
+      <div className={cn("flex w-full flex-col lg:w-3/5")}>
+        {/* Input + toggle + “Use Roads” */}
+        <div className={cn("mx-auto my-6 w-full max-w-2xl")}>
+          <div
+            className={cn(
+              "flex flex-col rounded-lg bg-white p-4 shadow-md sm:flex-row sm:items-center sm:space-x-4"
+            )}>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder={
+                isCentral ? "Add Potential Central…" : "Add Address…"
+              }
+              className={cn(
+                "flex-1 rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              )}
+            />
+            <div className={cn("mt-3 flex space-x-3 sm:mt-0")}>
+              <button
+                onClick={() => setIsCentral((prev) => !prev)}
+                className={cn(
+                  "rounded-md bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
+                )}>
+                {isCentral ? "Switch to Address" : "Switch to Potential"}
+              </button>
+              <label className={cn("flex items-center space-x-2")}>
                 <input
                   type="checkbox"
-                  checked={false /* controlled by AddressList component */}
-                  onChange={() => {}}
-                  className="h-5 w-5"
-                  aria-label={`Select address: ${address.name}`}
+                  checked={useRoads}
+                  onChange={() => setUseRoads((prev) => !prev)}
+                  className={cn("h-5 w-5")}
                 />
-                <span>{address.name}</span>
+                <span className={cn("select-none")}>Use Roads</span>
               </label>
-            ))}
+            </div>
           </div>
-          {/* Controls moved to AddressList component */}
         </div>
 
-        {/* Potential Centrals Card */}
-        <div className="rounded-lg bg-white p-6 shadow-md">
-          <h2 className="mb-4 text-lg font-semibold">
-            Potential Central Locations
-          </h2>
-          <div className="max-h-56 space-y-2 overflow-y-auto">
-            {potentialCentrals.map((address) => {
-              const isMostCentral =
-                mostCentralAddress &&
-                address.lat === mostCentralAddress.lat &&
-                address.lng === mostCentralAddress.lng;
+        {/* Map container */}
+        <div className={cn("flex flex-grow justify-center px-4")}>
+          <div
+            ref={mapRef}
+            id="map"
+            className={cn(
+              "aspect-video h-[63vh] w-full max-w-full overflow-hidden rounded-lg shadow-md lg:h-full"
+            )}
+          />
+        </div>
 
-              return (
-                <label
-                  key={`${address.lat}-${address.lng}`}
-                  className={`flex cursor-pointer select-none items-center space-x-2 ${
-                    isMostCentral ? "rounded-md bg-green-50 p-1" : ""
-                  }`}>
-                  <input
-                    type="checkbox"
-                    checked={false /* controlled by AddressList component */}
-                    onChange={() => {}}
-                    className="h-5 w-5"
-                    aria-label={`Select potential central: ${address.name}`}
-                  />
-                  <span>{address.name}</span>
-                </label>
-              );
-            })}
-          </div>
-          {/* Controls moved to AddressList component */}
+        {/* Legend */}
+        <div className={cn("px-4 py-2")}>
+          <KeyLegend geoCenterMarkerRef={geoCenterMarkerRef} />
         </div>
       </div>
 
-      {/* Actual address/potential lists + controls are rendered by AddressList */}
-      <AddressList
-        addresses={addresses}
-        potentialCentrals={potentialCentrals}
-        handleSwitch={handleSwitch}
-        handleRemove={handleRemove}
-        mostCentralAddress={mostCentralAddress}
-      />
-    </>
+      {/* Right column: Address lists */}
+      <div className={cn("w-full overflow-auto bg-gray-50 p-4 lg:w-2/5")}>
+        <AddressList
+          addresses={addresses}
+          potentialCentrals={potentialCentrals}
+          handleSwitch={handleSwitch}
+          handleRemove={handleRemove}
+          mostCentralAddress={mostCentralAddress}
+        />
+      </div>
+    </div>
   );
 }
