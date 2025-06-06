@@ -1,6 +1,6 @@
 // File: src/components/Map/AddressList.tsx
 
-import Modal from "@/components/Modal";
+import Modal from "@/components/Modal"; // ← ensure this points to Modal, not KeyLegend
 import Address from "@/types/address";
 import cn from "@/utils/cn";
 import { useState } from "react";
@@ -105,16 +105,16 @@ export default function AddressList({
               <label
                 key={`${address.lat}-${address.lng}`}
                 className={cn(
-                  "mb-2 flex cursor-pointer select-none items-center"
+                  "mb-2 flex cursor-pointer select-none items-center space-x-2"
                 )}>
                 <input
                   type="checkbox"
                   checked={selectedAddresses.includes(index)}
                   onChange={() => toggleSelectedAddress(index)}
-                  className={cn("h-5 w-5")}
+                  className="h-5 w-5"
                   aria-label={`Select address: ${address.name}`}
                 />
-                <span className={cn("ml-2")}>{address.name}</span>
+                <span>{address.name}</span>
               </label>
             ))}
           </div>
@@ -122,19 +122,13 @@ export default function AddressList({
             <button
               onClick={() => onSwitchClicked(false)}
               disabled={selectedAddresses.length === 0}
-              className={cn(
-                "text-sm text-green-600 transition-colors duration-200 hover:text-green-800 disabled:cursor-not-allowed disabled:text-gray-400"
-              )}
-              aria-label="Move selected addresses to potential centrals">
+              className="text-sm text-green-600 hover:text-green-800 disabled:cursor-not-allowed disabled:text-gray-400">
               Move to Potential Centrals
             </button>
             <button
               onClick={() => onRemoveClicked(false)}
               disabled={selectedAddresses.length === 0}
-              className={cn(
-                "text-sm text-red-600 transition-colors duration-200 hover:text-red-800 disabled:cursor-not-allowed disabled:text-gray-400"
-              )}
-              aria-label="Remove selected addresses">
+              className="text-sm text-red-600 hover:text-red-800 disabled:cursor-not-allowed disabled:text-gray-400">
               Remove Selected
             </button>
           </div>
@@ -156,17 +150,17 @@ export default function AddressList({
                 <label
                   key={`${address.lat}-${address.lng}`}
                   className={cn(
-                    "mb-2 flex cursor-pointer select-none items-center",
-                    isMostCentral ? "rounded bg-green-200 p-1" : ""
+                    "mb-2 flex cursor-pointer select-none items-center space-x-2",
+                    isMostCentral ? "rounded bg-green-50 p-1" : ""
                   )}>
                   <input
                     type="checkbox"
                     checked={selectedCentrals.includes(index)}
                     onChange={() => toggleSelectedCentral(index)}
-                    className={cn("h-5 w-5")}
+                    className="h-5 w-5"
                     aria-label={`Select potential central: ${address.name}`}
                   />
-                  <span className={cn("ml-2")}>{address.name}</span>
+                  <span>{address.name}</span>
                 </label>
               );
             })}
@@ -175,19 +169,13 @@ export default function AddressList({
             <button
               onClick={() => onSwitchClicked(true)}
               disabled={selectedCentrals.length === 0}
-              className={cn(
-                "text-sm text-green-600 transition-colors duration-200 hover:text-green-800 disabled:cursor-not-allowed disabled:text-gray-400"
-              )}
-              aria-label="Move selected potential centrals to addresses">
+              className="text-sm text-green-600 hover:text-green-800 disabled:cursor-not-allowed disabled:text-gray-400">
               Move to Addresses
             </button>
             <button
               onClick={() => onRemoveClicked(true)}
               disabled={selectedCentrals.length === 0}
-              className={cn(
-                "text-sm text-red-600 transition-colors duration-200 hover:text-red-800 disabled:cursor-not-allowed disabled:text-gray-400"
-              )}
-              aria-label="Remove selected potential centrals">
+              className="text-sm text-red-600 hover:text-red-800 disabled:cursor-not-allowed disabled:text-gray-400">
               Remove Selected
             </button>
           </div>
