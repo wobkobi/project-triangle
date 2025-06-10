@@ -17,7 +17,7 @@
     "next": "^15.3.3",
     "react": "^19",
     "react-dom": "^19",
-    "tailwind-merge": "^3.3.0"
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
